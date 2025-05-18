@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <!-- kök element -->
+  <xs:element name="poll">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="question" type="xs:string"/>
+        <xs:element name="options">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="option" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="text" type="xs:string"/>
+                    <xs:element name="votes" type="xs:integer"/>
+                  </xs:sequence>
+                  <xs:attribute name="id" type="xs:integer" use="required"/>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="id" type="xs:integer" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

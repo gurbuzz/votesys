@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+
+{% block content %}
+  <h1 class="mb-4">Aktif Anketler</h1>
+  <ul id="poll-list" class="list-group">
+    <!-- JS dolduracak -->
+  </ul>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  fetch("/api/polls")
+    .then(res => res.json())
+    .then(ids => {
+      const ul = document.getElementById("poll-list");
+      if (!ids.length) {
+        ul.innerHTML = '<li class="list-group-item">Henüz anket yok.</li>';
+        return;
+      }
+      ids.forEach(id => {
+        const li = document.createElement("li");
+        li.className = "list-group-item";
+        li.innerHTML = `<a href="/poll.html?id=${id}" class="link-primary">Anket #${id}</a>`;
+        ul.append(li);
+      });
+    })
+    .catch(err => console.error(err));
+});
+</script>
+{% endblock %}

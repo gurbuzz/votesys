@@ -1,0 +1,75 @@
+{% extends "layout.html" %}
+
+{% block content %}
+  <h1 id="question" class="mb-4"></h1>
+
+  <div id="options" class="mb-3">
+    <!-- JS dolduracak -->
+  </div>
+
+  <button id="vote-btn" class="btn btn-success">Oy Ver</button>
+  <div id="result" class="mt-4"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const params = new URLSearchParams(window.location.search);
+  const pollId = params.get("id");
+  if (!pollId) return;  // id yoksa bırak
+
+  let currentPoll;
+
+  // Anketi al
+  fetch(`/api/polls/${pollId}`)
+    .then(res => res.json())
+    .then(poll => {
+      currentPoll = poll;
+      document.getElementById("question").textContent = poll.question;
+      const optsDiv = document.getElementById("options");
+      optsDiv.innerHTML = "";  // temizle
+      poll.options.forEach(opt => {
+        const r = document.createElement("div");
+        r.className = "form-check mb-2";
+        r.innerHTML = `
+          <input class="form-check-input" type="radio" name="opt" id="opt${opt.id}" value="${opt.id}">
+          <label class="form-check-label" for="opt${opt.id}">
+            ${opt.text} (<span id="votes${opt.id}">${opt.votes}</span> oy)
+          </label>`;
+        optsDiv.append(r);
+      });
+    });
+
+  // Oy gönderme
+  document.getElementById("vote-btn").addEventListener("click", () => {
+    const sel = document.querySelector('input[name="opt"]:checked');
+    if (!sel) {
+      alert("Lütfen bir seçenek işaretle.");
+      return;
+    }
+    const optId = Number(sel.value);
+    fetch(`/api/polls/${pollId}/vote`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ option_id: optId })
+    })
+    .then(res => {
+      if (!res.ok) throw new Error("Oy verilemedi");
+      return res.json();
+    })
+    .then(updated => {
+      // ekranı güncelle
+      updated.options.forEach(opt => {
+        const span = document.getElementById(`votes${opt.id}`);
+        if (span) span.textContent = opt.votes;
+      });
+      document.getElementById("result").innerHTML = '<div class="alert alert-success">Oy kaydedildi!</div>';
+    })
+    .catch(err => {
+      console.error(err);
+      alert("Bir hata oldu.");
+    });
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+jinja2
+python-multipart
+lxml
+pydantic-xml
+filelock
+python-jose[cryptography]
+pytest
+httpx

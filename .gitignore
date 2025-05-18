@@ -1,0 +1,16 @@
+# Python sanal ortam
+venv/
+# Byte-code
+__pycache__/
+*.py[cod]
+# Ortam değişkenleri
+.env
+# FastAPI data klasörü (opsiyonel istersen saklayabilirsin)
+app/data/
+# VS Code ayar klasörü
+.vscode/
+# Docker
+*.log
+docker-compose.override.yml
+# macOS
+.DS_Store
