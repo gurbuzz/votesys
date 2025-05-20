@@ -1,73 +1,85 @@
 {% extends "layout.html" %}
 
 {% block content %}
-  <h1 id="question" class="mb-4"></h1>
-
-  <div id="options" class="mb-3">
-    <!-- JS dolduracak -->
+  <div class="card shadow-sm">
+    <div class="card-header">
+      <h5 id="question" class="mb-0">Yükleniyor…</h5>
+    </div>
+    <div class="card-body">
+      <form id="vote-form" class="mb-3"></form>
+      <button id="vote-btn" class="btn btn-success">Oy Ver</button>
+      <div id="result" class="mt-3"></div>
+    </div>
   </div>
-
-  <button id="vote-btn" class="btn btn-success">Oy Ver</button>
-  <div id="result" class="mt-4"></div>
 {% endblock %}
 
 {% block scripts %}
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-  const params = new URLSearchParams(window.location.search);
-  const pollId = params.get("id");
-  if (!pollId) return;  // id yoksa bırak
+  const params  = new URLSearchParams(location.search);
+  const pollId  = params.get("id");
+  const qSpan   = document.getElementById("question");
+  const form    = document.getElementById("vote-form");
+  const result  = document.getElementById("result");
 
-  let currentPoll;
+  if (!pollId) {
+    qSpan.textContent = "Geçersiz anket ID";
+    return;
+  }
 
-  // Anketi al
+  // 1) Anket detayını çek
   fetch(`/api/polls/${pollId}`)
-    .then(res => res.json())
+    .then(r => {
+      if (!r.ok) throw new Error("Anket bulunamadı");
+      return r.json();
+    })
     .then(poll => {
-      currentPoll = poll;
-      document.getElementById("question").textContent = poll.question;
-      const optsDiv = document.getElementById("options");
-      optsDiv.innerHTML = "";  // temizle
+      qSpan.textContent = poll.question;
+      form.innerHTML = "";               // temizle
       poll.options.forEach(opt => {
-        const r = document.createElement("div");
-        r.className = "form-check mb-2";
-        r.innerHTML = `
-          <input class="form-check-input" type="radio" name="opt" id="opt${opt.id}" value="${opt.id}">
-          <label class="form-check-label" for="opt${opt.id}">
-            ${opt.text} (<span id="votes${opt.id}">${opt.votes}</span> oy)
-          </label>`;
-        optsDiv.append(r);
+        form.insertAdjacentHTML("beforeend", `
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="radio" name="opt" id="opt${opt.id}" value="${opt.id}">
+            <label class="form-check-label" for="opt${opt.id}">
+              ${opt.text} (<span id="votes${opt.id}">${opt.votes}</span> oy)
+            </label>
+          </div>
+        `);
       });
+    })
+    .catch(err => {
+      qSpan.textContent = err.message;
+      console.error(err);
     });
 
-  // Oy gönderme
+  // 2) Oy gönder
   document.getElementById("vote-btn").addEventListener("click", () => {
-    const sel = document.querySelector('input[name="opt"]:checked');
+    const sel = form.querySelector("input[name='opt']:checked");
     if (!sel) {
-      alert("Lütfen bir seçenek işaretle.");
+      alert("Lütfen bir seçenek seç.");
       return;
     }
     const optId = Number(sel.value);
+
     fetch(`/api/polls/${pollId}/vote`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ option_id: optId })
     })
-    .then(res => {
-      if (!res.ok) throw new Error("Oy verilemedi");
-      return res.json();
+    .then(r => {
+      if (!r.ok) throw new Error("Oy verilemedi");
+      return r.json();
     })
     .then(updated => {
-      // ekranı güncelle
-      updated.options.forEach(opt => {
-        const span = document.getElementById(`votes${opt.id}`);
-        if (span) span.textContent = opt.votes;
+      updated.options.forEach(o => {
+        const span = document.getElementById(`votes${o.id}`);
+        if (span) span.textContent = o.votes;
       });
-      document.getElementById("result").innerHTML = '<div class="alert alert-success">Oy kaydedildi!</div>';
+      result.innerHTML = '<div class="alert alert-success">✅ Oy kaydedildi!</div>';
     })
     .catch(err => {
+      result.innerHTML = `<div class="alert alert-danger">❌ ${err.message}</div>`;
       console.error(err);
-      alert("Bir hata oldu.");
     });
   });
 });

@@ -1,4 +1,5 @@
 {% extends "layout.html" %}
+
 {% block content %}
 <div class="card shadow-sm mb-4">
   <div class="card-header d-flex justify-content-between align-items-center">
@@ -6,40 +7,70 @@
     <a href="/admin/create" class="btn btn-sm btn-primary">➕ Yeni Anket</a>
   </div>
   <ul id="admin-poll-list" class="list-group list-group-flush">
-    <!-- JS ile doldurulacak -->
+    <!-- JS dolduracak -->
   </ul>
   <div class="card-body text-center">
-    <small class="text-muted">Anket yoksa yukarıda görünür</small>
+    <small class="text-muted">Henüz anket yoksa yukarıda görünür</small>
   </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-  // giriş yapmamışsa login’e at
-  const token = localStorage.getItem("token");
-  if (!token) location.href = "/login";
+  (async function(){
+    // 1) Token kontrolü
+    const token = localStorage.getItem("token");
+    if (!token) {
+      return void window.location.replace("/login");
+    }
 
-  document.addEventListener("DOMContentLoaded", () => {
-    fetch("/api/polls", {
-      headers: { "Authorization": "Bearer " + token }
-    })
-    .then(r => r.json())
-    .then(ids => {
-      const ul = document.getElementById("admin-poll-list");
-      if (!ids.length) {
+    const ul = document.getElementById("admin-poll-list");
+    ul.innerHTML = '';  // Önce temizle
+
+    try {
+      // 2) Anket ID'lerini çek
+      const resIds = await fetch("/api/polls", {
+        headers: { "Authorization": "Bearer " + token }
+      });
+      if (!resIds.ok) throw new Error("Anket listesi alınamadı");
+      const ids = await resIds.json();
+
+      if (ids.length === 0) {
         ul.innerHTML = '<li class="list-group-item text-center">Henüz anket yok.</li>';
         return;
       }
-      ids.forEach(id => {
-        ul.innerHTML += `
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            Anket #${id}
-            <a class="btn btn-sm btn-outline-secondary" href="/poll.html?id=${id}">Görüntüle</a>
-          </li>`;
-      });
-    })
-    .catch(err => console.error(err));
-  });
+
+      // 3) Her anketin detayını ayrı ayrı çek ve listele
+      for (let id of ids) {
+        const resPoll = await fetch(`/api/polls/${id}`, {
+          headers: { "Authorization": "Bearer " + token }
+        });
+        if (!resPoll.ok) throw new Error(`Anket #${id} yüklenemedi`);
+        const poll = await resPoll.json();
+
+        // Şık metinlerini virgülle birleştir
+        const opts = poll.options.map(o => o.text).join(", ");
+
+        // <li> öğesini oluştur
+        const li = document.createElement("li");
+        li.className = "list-group-item position-relative";
+        li.innerHTML = `
+          <div>
+            <strong>#${poll.id}:</strong> ${poll.question}
+          </div>
+          <div class="text-muted small">
+            Şıklar: ${opts}
+          </div>
+          <a href="/poll.html?id=${poll.id}" 
+             class="btn btn-sm btn-outline-secondary position-absolute end-2 top-50 translate-middle-y">
+            Görüntüle
+          </a>`;
+        ul.appendChild(li);
+      }
+    } catch (err) {
+      console.error(err);
+      ul.innerHTML = `<li class="list-group-item text-danger">Hata: ${err.message}</li>`;
+    }
+  })();
 </script>
 {% endblock %}

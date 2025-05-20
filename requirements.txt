@@ -8,3 +8,4 @@ filelock
 python-jose[cryptography]
 pytest
 httpx
+python-dotenv

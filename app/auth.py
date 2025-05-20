@@ -6,6 +6,8 @@ from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from fastapi import HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordBearer
+from dotenv import load_dotenv
+load_dotenv()   # .env dosyasını oku
 
 # Ortam değişkenlerinden veya .env’den
 SECRET_KEY = os.getenv("JWT_SECRET", "change-this-secret")
