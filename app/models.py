@@ -1,6 +1,6 @@
 # votesys/app/models.py
 
-from typing import List
+from typing import List, Optional
 from pydantic_xml import BaseXmlModel, attr, element
 
 class Option(BaseXmlModel, tag="option"):
@@ -10,16 +10,13 @@ class Option(BaseXmlModel, tag="option"):
       <votes>...</votes>
     </option>
     """
-    # XML attribute olarak id
-    id: int = attr(name="id")
-    # XML child elementi <text>
-    text: str = element(name="text")
-    # XML child elementi <votes>
+    id: int    = attr(name="id")
+    text: str  = element(name="text")
     votes: int = element(name="votes")
 
 class Poll(BaseXmlModel, tag="poll"):
     """
-    <poll id="...">
+    <poll id="..." owner="...">
       <question>...</question>
       <options>
         <option>...</option>
@@ -27,9 +24,7 @@ class Poll(BaseXmlModel, tag="poll"):
       </options>
     </poll>
     """
-    # XML attribute olarak anket id’si
-    id: int = attr(name="id")
-    # XML child elementi <question>
-    question: str = element(name="question")
-    # <options> içindeki <option> elementlerini liste olarak al
-    options: List[Option] = element(tag="option", wrapped="options")
+    id: int                 = attr(name="id")
+    owner: Optional[str]    = attr(name="owner", default=None)
+    question: str           = element(name="question")
+    options: List[Option]   = element(tag="option", wrapped="options")

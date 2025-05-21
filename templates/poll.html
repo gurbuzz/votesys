@@ -1,87 +1,89 @@
 {% extends "layout.html" %}
-
 {% block content %}
-  <div class="card shadow-sm">
-    <div class="card-header">
-      <h5 id="question" class="mb-0">Yükleniyor…</h5>
-    </div>
-    <div class="card-body">
-      <form id="vote-form" class="mb-3"></form>
-      <button id="vote-btn" class="btn btn-success">Oy Ver</button>
-      <div id="result" class="mt-3"></div>
-    </div>
+<div class="card shadow-sm mx-auto" style="max-width:600px;">
+  <div class="card-header bg-warning text-dark">
+    <h5 id="question" class="mb-0">Yükleniyor…</h5>
   </div>
+  <div class="card-body">
+    <form id="vote-form"></form>
+    <div class="d-grid">
+      <button id="vote-btn" class="btn btn-success mt-3">Oy Ver</button>
+    </div>
+    <div id="result" class="mt-3"></div>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-  const params  = new URLSearchParams(location.search);
-  const pollId  = params.get("id");
-  const qSpan   = document.getElementById("question");
-  const form    = document.getElementById("vote-form");
-  const result  = document.getElementById("result");
+(async () => {
+  const token = localStorage.getItem("token");
+  if (!token) return void(location.href = "/login");
+
+  const params = new URLSearchParams(window.location.search);
+  const pollId = params.get("id");
+  const qEl    = document.getElementById("question");
+  const form   = document.getElementById("vote-form");
+  const result = document.getElementById("result");
 
   if (!pollId) {
-    qSpan.textContent = "Geçersiz anket ID";
+    qEl.textContent = "Geçersiz anket ID";
     return;
   }
 
-  // 1) Anket detayını çek
-  fetch(`/api/polls/${pollId}`)
-    .then(r => {
-      if (!r.ok) throw new Error("Anket bulunamadı");
-      return r.json();
-    })
-    .then(poll => {
-      qSpan.textContent = poll.question;
-      form.innerHTML = "";               // temizle
-      poll.options.forEach(opt => {
-        form.insertAdjacentHTML("beforeend", `
-          <div class="form-check mb-2">
-            <input class="form-check-input" type="radio" name="opt" id="opt${opt.id}" value="${opt.id}">
-            <label class="form-check-label" for="opt${opt.id}">
-              ${opt.text} (<span id="votes${opt.id}">${opt.votes}</span> oy)
-            </label>
-          </div>
-        `);
-      });
-    })
-    .catch(err => {
-      qSpan.textContent = err.message;
-      console.error(err);
+  try {
+    const res = await fetch(`/api/polls/${pollId}`, {
+      headers: { "Authorization": "Bearer " + token }
     });
+    if (!res.ok) throw new Error("Anket bulunamadı");
+    const poll = await res.json();
 
-  // 2) Oy gönder
-  document.getElementById("vote-btn").addEventListener("click", () => {
+    qEl.textContent = poll.question;
+    form.innerHTML = "";
+    poll.options.forEach(opt => {
+      form.insertAdjacentHTML("beforeend", `
+        <div class="form-check mb-2">
+          <input class="form-check-input" type="radio" name="opt" id="opt${opt.id}" value="${opt.id}">
+          <label class="form-check-label" for="opt${opt.id}">
+            ${opt.text} (<span id="votes${opt.id}">${opt.votes}</span> oy)
+          </label>
+        </div>`);
+    });
+  } catch (err) {
+    qEl.textContent = err.message;
+    console.error(err);
+    return;
+  }
+
+  document.getElementById("vote-btn").addEventListener("click", async () => {
     const sel = form.querySelector("input[name='opt']:checked");
     if (!sel) {
-      alert("Lütfen bir seçenek seç.");
+      alert("Lütfen bir seçenek seçin.");
       return;
     }
-    const optId = Number(sel.value);
+    try {
+      const updated = await fetch(`/api/polls/${pollId}/vote`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({ option_id: Number(sel.value) })
+      }).then(r => {
+        if (!r.ok) throw new Error("Oy verilemedi");
+        return r.json();
+      });
 
-    fetch(`/api/polls/${pollId}/vote`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ option_id: optId })
-    })
-    .then(r => {
-      if (!r.ok) throw new Error("Oy verilemedi");
-      return r.json();
-    })
-    .then(updated => {
       updated.options.forEach(o => {
         const span = document.getElementById(`votes${o.id}`);
         if (span) span.textContent = o.votes;
       });
       result.innerHTML = '<div class="alert alert-success">✅ Oy kaydedildi!</div>';
-    })
-    .catch(err => {
+    } catch (err) {
       result.innerHTML = `<div class="alert alert-danger">❌ ${err.message}</div>`;
       console.error(err);
-    });
+    }
   });
-});
+})();
 </script>
 {% endblock %}

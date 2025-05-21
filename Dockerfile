@@ -19,3 +19,8 @@ EXPOSE 8000
 
 # 7. Container ayağa kalkınca çalışacak komut
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+# 8) Derleme bağımlılıkları
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential libffi-dev \
+  && rm -rf /var/lib/apt/lists/*

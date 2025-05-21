@@ -1,13 +1,14 @@
+<!-- templates/admin_list.html -->
 {% extends "layout.html" %}
 
 {% block content %}
-<div class="card shadow-sm mb-4">
+<div class="card shadow-sm mx-auto" style="max-width:700px;">
   <div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="mb-0">Yönetici Paneli</h5>
+    <h5 class="mb-0">🛠 Yönetici Paneli</h5>
     <a href="/admin/create" class="btn btn-sm btn-primary">➕ Yeni Anket</a>
   </div>
   <ul id="admin-poll-list" class="list-group list-group-flush">
-    <!-- JS dolduracak -->
+    <!-- JS ile eklenecek -->
   </ul>
   <div class="card-body text-center">
     <small class="text-muted">Henüz anket yoksa yukarıda görünür</small>
@@ -18,58 +19,40 @@
 {% block scripts %}
 <script>
   (async function(){
-    // 1) Token kontrolü
     const token = localStorage.getItem("token");
-    if (!token) {
-      return void window.location.replace("/login");
-    }
-
+    if (!token) return void(location.href = "/login");
     const ul = document.getElementById("admin-poll-list");
-    ul.innerHTML = '';  // Önce temizle
+    ul.innerHTML = '';
 
     try {
-      // 2) Anket ID'lerini çek
-      const resIds = await fetch("/api/polls", {
+      const ids = await fetch("/api/polls", {
         headers: { "Authorization": "Bearer " + token }
-      });
-      if (!resIds.ok) throw new Error("Anket listesi alınamadı");
-      const ids = await resIds.json();
+      }).then(r => r.json());
 
-      if (ids.length === 0) {
+      if (!ids.length) {
         ul.innerHTML = '<li class="list-group-item text-center">Henüz anket yok.</li>';
         return;
       }
 
-      // 3) Her anketin detayını ayrı ayrı çek ve listele
       for (let id of ids) {
-        const resPoll = await fetch(`/api/polls/${id}`, {
+        const poll = await fetch(`/api/polls/${id}`, {
           headers: { "Authorization": "Bearer " + token }
-        });
-        if (!resPoll.ok) throw new Error(`Anket #${id} yüklenemedi`);
-        const poll = await resPoll.json();
+        }).then(r => r.json());
 
-        // Şık metinlerini virgülle birleştir
         const opts = poll.options.map(o => o.text).join(", ");
-
-        // <li> öğesini oluştur
         const li = document.createElement("li");
         li.className = "list-group-item position-relative";
         li.innerHTML = `
-          <div>
-            <strong>#${poll.id}:</strong> ${poll.question}
-          </div>
-          <div class="text-muted small">
-            Şıklar: ${opts}
-          </div>
-          <a href="/poll.html?id=${poll.id}" 
-             class="btn btn-sm btn-outline-secondary position-absolute end-2 top-50 translate-middle-y">
+          <div><strong>#${poll.id}:</strong> ${poll.question}</div>
+          <div class="text-muted small">Şıklar: ${opts}</div>
+          <a href="/poll.html?id=${poll.id}" class="btn btn-sm btn-outline-secondary position-absolute end-3 top-50 translate-middle-y">
             Görüntüle
           </a>`;
         ul.appendChild(li);
       }
-    } catch (err) {
-      console.error(err);
-      ul.innerHTML = `<li class="list-group-item text-danger">Hata: ${err.message}</li>`;
+    } catch (e) {
+      console.error(e);
+      ul.innerHTML = `<li class="list-group-item text-danger">Hata: ${e.message}</li>`;
     }
   })();
 </script>

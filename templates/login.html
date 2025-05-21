@@ -1,10 +1,9 @@
 {% extends "layout.html" %}
-
 {% block content %}
 <div class="d-flex justify-content-center">
-  <div class="card shadow-sm" style="width: 100%; max-width: 400px;">
-    <div class="card-header">
-      <h5 class="mb-0 text-center">Admin Girişi</h5>
+  <div class="card shadow-sm" style="width:100%; max-width:400px;">
+    <div class="card-header bg-primary text-white text-center">
+      <h5 class="mb-0">Admin Girişi</h5>
     </div>
     <div class="card-body">
       <form id="login-form">
@@ -16,7 +15,9 @@
           <label for="password" class="form-label">Şifre</label>
           <input type="password" id="password" class="form-control" required>
         </div>
-        <button type="submit" class="btn btn-primary w-100">Giriş Yap</button>
+        <div class="d-grid">
+          <button type="submit" class="btn btn-primary">Giriş Yap</button>
+        </div>
       </form>
       <div id="login-alert" class="mt-3"></div>
     </div>
@@ -26,30 +27,30 @@
 
 {% block scripts %}
 <script>
-  document.getElementById("login-form").addEventListener("submit", e => {
-    e.preventDefault();
-    fetch("/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        username: document.getElementById("username").value,
-        password: document.getElementById("password").value
-      })
+document.getElementById("login-form").addEventListener("submit", e => {
+  e.preventDefault();
+  fetch("/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      username: document.getElementById("username").value,
+      password: document.getElementById("password").value
     })
-    .then(r => r.json().then(j=>({ ok: r.ok, j })))
-    .then(({ ok, j }) => {
-      const alertBox = document.getElementById("login-alert");
-      if (ok) {
-        localStorage.setItem("token", j.access_token);
-        window.location.href = "/admin";
-      } else {
-        alertBox.innerHTML = `<div class="alert alert-danger">${j.detail}</div>`;
-      }
-    })
-    .catch(() => {
-      document.getElementById("login-alert").innerHTML =
-        '<div class="alert alert-danger">Sunucuya ulaşılamıyor.</div>';
-    });
+  })
+  .then(r => r.json().then(j => ({ ok: r.ok, j })))
+  .then(({ ok, j }) => {
+    const alertBox = document.getElementById("login-alert");
+    if (ok) {
+      localStorage.setItem("token", j.access_token);
+      window.location.href = "/admin";
+    } else {
+      alertBox.innerHTML = `<div class="alert alert-danger">${j.detail}</div>`;
+    }
+  })
+  .catch(() => {
+    document.getElementById("login-alert").innerHTML =
+      '<div class="alert alert-danger">Sunucuya ulaşılamıyor.</div>';
   });
+});
 </script>
 {% endblock %}

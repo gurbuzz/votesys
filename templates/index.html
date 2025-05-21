@@ -1,31 +1,42 @@
 {% extends "layout.html" %}
-
 {% block content %}
-  <h1 class="mb-4">Aktif Anketler</h1>
-  <ul id="poll-list" class="list-group">
+<div class="card shadow-sm mx-auto" style="max-width:600px;">
+  <div class="card-header bg-info text-white">
+    <h5 class="mb-0">Aktif Anketler</h5>
+  </div>
+  <ul id="poll-list" class="list-group list-group-flush">
     <!-- JS dolduracak -->
   </ul>
+  <div class="card-body text-center">
+    <small class="text-muted">Henüz anket yoksa burada görünür</small>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-  fetch("/api/polls")
-    .then(res => res.json())
-    .then(ids => {
-      const ul = document.getElementById("poll-list");
-      if (!ids.length) {
-        ul.innerHTML = '<li class="list-group-item">Henüz anket yok.</li>';
-        return;
-      }
-      ids.forEach(id => {
-        const li = document.createElement("li");
-        li.className = "list-group-item";
-        li.innerHTML = `<a href="/poll.html?id=${id}" class="link-primary">Anket #${id}</a>`;
-        ul.append(li);
-      });
-    })
-    .catch(err => console.error(err));
+document.addEventListener("DOMContentLoaded", async () => {
+  const ul = document.getElementById("poll-list");
+  ul.innerHTML = "";
+  try {
+    const ids = await fetch("/api/polls").then(r => r.json());
+    if (!ids.length) {
+      ul.innerHTML = '<li class="list-group-item text-center">Henüz anket yok.</li>';
+      return;
+    }
+    ids.forEach(id => {
+      const li = document.createElement("li");
+      li.className = "list-group-item position-relative";
+      li.innerHTML = `
+        <a href="/poll.html?id=${id}" class="stretched-link text-decoration-none">
+          Anket #${id} sayfasına git
+        </a>`;
+      ul.appendChild(li);
+    });
+  } catch (err) {
+    console.error(err);
+    ul.innerHTML = '<li class="list-group-item text-danger">Anketler yüklenemedi.</li>';
+  }
 });
 </script>
 {% endblock %}

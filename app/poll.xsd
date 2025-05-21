@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           elementFormDefault="qualified"
+           attributeFormDefault="unqualified">
 
-  <!-- kök element -->
+  <!-- Anket kök elementi -->
   <xs:element name="poll">
     <xs:complexType>
       <xs:sequence>
@@ -22,7 +24,11 @@
           </xs:complexType>
         </xs:element>
       </xs:sequence>
-      <xs:attribute name="id" type="xs:integer" use="required"/>
+
+      <!-- Zorunlu id attribute -->
+      <xs:attribute name="id"    type="xs:integer" use="required"/>
+      <!-- Yeni eklediğimiz owner attribute (isteğe bağlı) -->
+      <xs:attribute name="owner" type="xs:string"  use="optional"/>
     </xs:complexType>
   </xs:element>
 
