@@ -128,7 +128,7 @@ def admin_only(user = Depends(get_current_user)):
 
 # ─────────────────────── Yöneticiye özel yardımcılar ─────────────────────────
 def list_users() -> List[Dict]:
-    """Kullanıcıları (hash hariç) döndür."""
+    """Kullanıcıları (hash hariç) döndür."""    
     return [
         {"username": u["username"], "email": u["email"], "role": u["role"]}
         for u in _load_users()
@@ -139,3 +139,4 @@ def delete_user(username: str) -> None:
     if not any(u["username"] == username for u in users):
         raise HTTPException(404, "Kullanıcı bulunamadı")
     _save_users([u for u in users if u["username"] != username])
+    

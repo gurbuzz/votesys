@@ -51,24 +51,19 @@
   document.getElementById("add-opt").addEventListener("click", () => addOption(optCounter++));
   document.getElementById("create-form").addEventListener("submit", e => {
     e.preventDefault();
-    const id = Number(document.getElementById("poll-id").value);
+    const id       = Number(document.getElementById("poll-id").value);
     const question = document.getElementById("poll-question").value.trim();
     if (!id || !question) return;
 
-    const options = Array.from(wrap.querySelectorAll("[data-opt]")).map(div => {
-      return {
-        id: Number(div.dataset.opt),
-        text: div.querySelector("input").value.trim(),
-        votes: 0
-      };
-    });
+    const options = Array.from(wrap.querySelectorAll("[data-opt]")).map(div => ({
+      id: Number(div.dataset.opt),
+      text: div.querySelector("input").value.trim(),
+      votes: 0
+    }));
 
+    // fetchAuth helper'ı main.js içinde tanımlı
     fetchAuth("/api/polls", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + token
-      },
       body: JSON.stringify({ id, question, options })
     })
     .then(r => r.json().then(j => ({ ok: r.ok, j })))
@@ -77,7 +72,11 @@
       alertBox.innerHTML = ok
         ? '<div class="alert alert-success">✅ Anket kaydedildi</div>'
         : `<div class="alert alert-danger">❌ ${j.detail}</div>`;
-      if (ok) setTimeout(() => location.href = "/admin", 1000);
+      if (ok) {
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 1000);
+      }
     })
     .catch(err => console.error(err));
   });

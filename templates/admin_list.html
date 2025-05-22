@@ -1,51 +1,120 @@
+<!-- templates/admin_list.html -->
 {% extends "layout.html" %}
+
 {% block content %}
-<div class="card shadow-sm mx-auto" style="max-width:800px;">
-  <div class="card-header bg-primary text-white">
-    <h5 class="mb-0">Admin Paneli • Anketler</h5>
+<div class="card shadow-sm mx-auto" style="max-width:900px;">
+  <div class="card-header">
+    <ul class="nav nav-tabs card-header-tabs" id="adminTab" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="polls-tab" data-bs-toggle="tab" data-bs-target="#polls" type="button">
+          Anketler
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="users-tab" data-bs-toggle="tab" data-bs-target="#users" type="button">
+          Kullanıcılar
+        </button>
+      </li>
+    </ul>
   </div>
-  <div class="card-body">
-    <table class="table">
-      <thead>
-        <tr><th>ID</th><th>Soru</th><th>Owner</th><th>İşlemler</th></tr>
-      </thead>
-      <tbody id="admin-table"></tbody>
-    </table>
+  <div class="tab-content px-3 py-2">
+    <!-- Anketler Sekmesi -->
+    <div class="tab-pane fade show active" id="polls" role="tabpanel">
+      <ul id="admin-poll-list" class="list-group list-group-flush"></ul>
+    </div>
+    <!-- Kullanıcılar Sekmesi -->
+    <div class="tab-pane fade" id="users" role="tabpanel">
+      <ul id="admin-user-list" class="list-group list-group-flush"></ul>
+    </div>
   </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-document.addEventListener("DOMContentLoaded", async () => {
-  renderNavbar();
-  const tbody = document.getElementById("admin-table");
-  try {
-    const ids = await fetch("/api/polls").then(r => r.json());
-    for (let id of ids) {
-      const poll = await fetch(`/api/polls/${id}`).then(r => r.json());
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${poll.id}</td>
-        <td>${poll.question}</td>
-        <td>${poll.owner}</td>
-        <td>
-          <button class="btn btn-sm btn-danger del-btn" data-id="${poll.id}">
-            Sil
-          </button>
-        </td>`;
-      tbody.appendChild(tr);
-    }
-    document.querySelectorAll(".del-btn").forEach(btn => {
-      btn.onclick = async () => {
-        if (!confirm("Silinsin mi?")) return;
-        await fetchAuth(`/api/polls/${btn.dataset.id}`, { method: "DELETE" });
-        location.reload();
-      };
-    });
-  } catch {
-    tbody.innerHTML = `<tr><td colspan="4" class="text-danger">Yüklenemedi</td></tr>`;
+(async function(){
+  // Token kontrolü
+  const { token, role } = { token: localStorage.getItem("token"), role: localStorage.getItem("role") };
+  if (!token || role !== "admin") {
+    return void window.location.replace("/login");
   }
-});
+
+  // Helper’lar
+  const fetchAuth = window.fetchAuth;
+
+  // 1) Anketleri getir ve listele
+  const pollUl = document.getElementById("admin-poll-list");
+  pollUl.innerHTML = "";  
+  try {
+    const polls = await fetchAuth("/api/polls").then(r => r.json());
+    if (!polls.length) {
+      pollUl.innerHTML = '<li class="list-group-item text-center">Henüz anket yok.</li>';
+    } else {
+      for (let id of polls) {
+        const p = await fetchAuth(`/api/polls/${id}`).then(r => r.json());
+        const li = document.createElement("li");
+        li.className = "list-group-item d-flex justify-content-between align-items-center";
+        li.innerHTML = `
+          <div>
+            <strong>#${p.id}:</strong> ${p.question}
+          </div>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-danger" data-poll="${p.id}">Sil</button>
+            <a class="btn btn-outline-secondary" href="/poll.html?id=${p.id}">Görüntüle</a>
+          </div>`;
+        pollUl.append(li);
+      }
+    }
+  } catch (e) {
+    pollUl.innerHTML = `<li class="list-group-item text-danger">Anket yüklenemedi</li>`;
+    console.error(e);
+  }
+
+  // 2) Kullanıcıları getir ve listele
+  const userUl = document.getElementById("admin-user-list");
+  userUl.innerHTML = "";
+  try {
+    const users = await fetchAuth("/api/users").then(r => r.json());
+    if (!users.length) {
+      userUl.innerHTML = '<li class="list-group-item text-center">Henüz kullanıcı yok.</li>';
+    } else {
+      for (let u of users) {
+        const li = document.createElement("li");
+        li.className = "list-group-item d-flex justify-content-between align-items-center";
+        li.innerHTML = `
+          <div>
+            <strong>${u.username}</strong> <small class="text-muted">&lt;${u.email}&gt;</small>
+          </div>
+          <button class="btn btn-danger btn-sm" data-user="${u.username}">Sil</button>`;
+        userUl.append(li);
+      }
+    }
+  } catch (e) {
+    userUl.innerHTML = `<li class="list-group-item text-danger">Kullanıcı yüklenemedi</li>`;
+    console.error(e);
+  }
+
+  // Silme handler’ları
+  pollUl.addEventListener("click", async e => {
+    if (e.target.dataset.poll) {
+      const id = e.target.dataset.poll;
+      if (confirm(`#${id} anketini silmek istediğine emin misin?`)) {
+        const res = await fetchAuth(`/api/polls/${id}`, { method: "DELETE" });
+        if (res.ok) e.target.closest("li").remove();
+      }
+    }
+  });
+
+  userUl.addEventListener("click", async e => {
+    if (e.target.dataset.user) {
+      const username = e.target.dataset.user;
+      if (confirm(`${username} kullanıcısını silmek istediğine emin misin?`)) {
+        const res = await fetchAuth(`/api/users/${username}`, { method: "DELETE" });
+        if (res.ok) e.target.closest("li").remove();
+      }
+    }
+  });
+
+})();
 </script>
 {% endblock %}
