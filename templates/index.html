@@ -4,9 +4,7 @@
   <div class="card-header bg-info text-white">
     <h5 class="mb-0">Aktif Anketler</h5>
   </div>
-  <ul id="poll-list" class="list-group list-group-flush">
-    <!-- JS dolduracak -->
-  </ul>
+  <ul id="poll-list" class="list-group list-group-flush"></ul>
   <div class="card-body text-center">
     <small class="text-muted">Henüz anket yoksa burada görünür</small>
   </div>
@@ -16,14 +14,15 @@
 {% block scripts %}
 <script>
 document.addEventListener("DOMContentLoaded", async () => {
+  renderNavbar();
   const ul = document.getElementById("poll-list");
-  ul.innerHTML = "";
   try {
     const ids = await fetch("/api/polls").then(r => r.json());
     if (!ids.length) {
       ul.innerHTML = '<li class="list-group-item text-center">Henüz anket yok.</li>';
       return;
     }
+    ul.innerHTML = "";
     ids.forEach(id => {
       const li = document.createElement("li");
       li.className = "list-group-item position-relative";
@@ -33,8 +32,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         </a>`;
       ul.appendChild(li);
     });
-  } catch (err) {
-    console.error(err);
+  } catch {
     ul.innerHTML = '<li class="list-group-item text-danger">Anketler yüklenemedi.</li>';
   }
 });
