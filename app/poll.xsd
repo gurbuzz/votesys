@@ -1,22 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- XSD şeması: Anket XML’ini doğrulamak için kullanılır -->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
            elementFormDefault="qualified"
            attributeFormDefault="unqualified">
 
-  <!-- Anket kök elementi -->
+  <!-- Kök element: her anket bir <poll> ile başlar -->
   <xs:element name="poll">
     <xs:complexType>
       <xs:sequence>
+        <!-- Anket sorusu: kullanıcıya gösterilecek metin -->
         <xs:element name="question" type="xs:string"/>
+
+        <!-- Seçenekler grubu: bir veya daha fazla <option> barındırır -->
         <xs:element name="options">
           <xs:complexType>
             <xs:sequence>
+              <!-- Her bir seçenek bir <option> elemanı -->
               <xs:element name="option" maxOccurs="unbounded">
                 <xs:complexType>
                   <xs:sequence>
+                    <!-- Seçeneğin metni -->
                     <xs:element name="text" type="xs:string"/>
+                    <!-- Bu seçeneğe verilen oy sayısı -->
                     <xs:element name="votes" type="xs:integer"/>
                   </xs:sequence>
+                  <!-- Seçeneğin benzersiz ID’si (zorunlu) -->
                   <xs:attribute name="id" type="xs:integer" use="required"/>
                 </xs:complexType>
               </xs:element>
@@ -25,9 +33,9 @@
         </xs:element>
       </xs:sequence>
 
-      <!-- Zorunlu id attribute -->
+      <!-- Anketin benzersiz ID’si (zorunlu attribute) -->
       <xs:attribute name="id"    type="xs:integer" use="required"/>
-      <!-- Yeni eklediğimiz owner attribute (isteğe bağlı) -->
+      <!-- Anketi oluşturan kullanıcı (isteğe bağlı) -->
       <xs:attribute name="owner" type="xs:string"  use="optional"/>
     </xs:complexType>
   </xs:element>
